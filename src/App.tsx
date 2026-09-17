@@ -11,6 +11,7 @@ import PriceChart from './components/PriceChart';
 import FlashLoanSimulator from './components/FlashLoanSimulator';
 import PriceScanner from './components/PriceScanner';
 import PythonCodePanel from './components/PythonCodePanel';
+import ProbabilityPanel from './components/ProbabilityPanel';
 import { 
   generateArbitrageOpportunities, 
   flashLoanStrategies as initialStrategies,
@@ -283,6 +284,9 @@ function App() {
             </div>
           </div>
         </main>
+
+          {/* Probability Engine & Gas Bidding */}
+          <ProbabilityPanel />
 
           {/* Python Backend Source Code */}
           <PythonCodePanel />

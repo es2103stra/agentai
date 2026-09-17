@@ -2,135 +2,153 @@ import { useState } from 'react';
 import { Code2, Copy, Check, Terminal, FileCode, BookOpen, ChevronDown, ChevronRight } from 'lucide-react';
 
 const pythonCode = `"""
-Flash Arbitrage Engine — Python Backend
-========================================
-Стратегия флеш-арбитража с парсингом цен на DEX,
-MEV-защитой через Flashbots Protect и работой в тестовой сети Sepolia.
+Flash Arbitrage Engine v2.0 — Gas Escalation & MEV Bidding
+============================================================
+Ключевое: динамическое повышение priority fee чтобы быть ПЕРВЫМ.
+Flashbots tip auction — платим валидатору за позицию в блоке.
 """
 
-import os, time, json, logging
-from dataclasses import dataclass, field
-from typing import List, Optional
+import os, time, math, logging
+from dataclasses import dataclass
 from decimal import Decimal
-
 import requests
 from web3 import Web3
-from web3.middleware import ExtraDataToPOAMiddleware
 from eth_account import Account
 
-# ─── Конфигурация ────────────────────────────────────────────────
-SEPOLIA_CHAIN_ID = 11155111
-SEPOLIA_RPC = "https://rpc.sepolia.org"
-FLASHBOTS_RPC = "https://rpc.flashbots.net"  # бесплатный MEV-protected RPC
-FLASHBOTS_RELAY = "https://relay.flashbots.net"
+# ─── Gas Bidding Параметры ──────────────────────────────────────
+BASE_PRIORITY_FEE_GWEI = 1.0      # стартуем с 1 gwei
+MAX_PRIORITY_FEE_GWEI = 50.0      # потолок — не разоряемся
+GAS_ESCALATION_STEP = 1.5         # множитель при конкуренции
+FLASHBOTS_TIP_PERCENT = 0.5       # % прибыли → валидатору
+MAX_TIP_PERCENT = 5.0             # максимум tip в аукционе
+COMPETITION_THRESHOLD = 0.3       # шанс < 30% → SKIP
 
-AAVE_POOL_V3 = "0x6Ae43d3271ff6888e7Fc43Fd7321a503ff739485"
-MIN_SPREAD_BPS = 15          # 0.15% — минимальный спред
-MIN_NET_PROFIT_USD = 5.0     # мин. чистая прибыль
-FLASH_LOAN_FEE_BPS = 9       # Aave V3 комиссия 0.09%
-
-# ─── 1. Price Oracle ────────────────────────────────────────────
-class PriceOracle:
-    """Парсит цены с 6 DEX через The Graph / REST API."""
+# ─── 1. Gas Escalation Engine ───────────────────────────────────
+class GasEscalationEngine:
+    """
+    Динамически повышает priority fee чтобы транзакция была первой.
+    Чем выше конкуренция — тем больше fee.
+    """
+    def __init__(self, w3, base_fee=1.0, max_fee=50.0):
+        self.w3 = w3
+        self.base_fee = base_fee
+        self.max_fee = max_fee
     
-    DEX_ENDPOINTS = {
-        "Uniswap V3": "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3",
-        "SushiSwap": "https://api.thegraph.com/subgraphs/name/sushi-v2/sushiswap-ethereum",
-        "PancakeSwap": "https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v2-eth",
-        "Curve": "https://api.curve.fi/api/getPools/ethereum",
-        "Balancer": "https://api.balancer.fi/pools/ethereum",
-        "1inch": "https://api.1inch.dev/price/v1.1/ethereum",
-    }
-    
-    def scan(self, token="ETH") -> List[dict]:
-        """Сканирует все DEX и возвращает список цен."""
-        prices = []
-        for dex, endpoint in self.DEX_ENDPOINTS.items():
-            try:
-                # GraphQL / REST запрос к DEX
-                price = self._fetch_price(dex, endpoint, token)
-                if price:
-                    prices.append(price)
-            except Exception as e:
-                logging.warning(f"{dex} fetch failed: {e}")
-        return prices
-
-# ─── 2. Strategy Engine ─────────────────────────────────────────
-class StrategyEngine:
-    """Ищет арбитражные возможности между DEX."""
-    
-    def find_opportunities(self, prices, loan_eth=50):
-        opps = []
-        for i, buy in enumerate(prices):
-            for sell in prices[i+1:]:
-                spread = (sell.price - buy.price) / buy.price
-                spread_bps = spread * 10000
-                if spread_bps < MIN_SPREAD_BPS:
-                    continue
-                
-                profit = loan_eth * spread
-                gas_cost = 0.003 * 3500  # ~$10
-                flash_fee = loan_eth * (FLASH_LOAN_FEE_BPS / 10000)
-                net = profit * 3500 - gas_cost - flash_fee * 3500
-                
-                if net > MIN_NET_PROFIT_USD:
-                    opps.append({
-                        "buy_dex": buy.dex,
-                        "sell_dex": sell.dex,
-                        "spread_bps": spread_bps,
-                        "net_profit_usd": net,
-                    })
-        return sorted(opps, key=lambda x: x["net_profit_usd"], reverse=True)
-
-# ─── 3. MEV Guard (Flashbots) ───────────────────────────────────
-class MEVGuard:
-    """Отправляет bundle через Flashbots — бесплатно, без API ключа."""
-    
-    def send_bundle(self, signed_tx, target_block):
-        payload = {
-            "jsonrpc": "2.0",
-            "method": "eth_sendBundle",
-            "params": [{
-                "txs": [signed_tx],
-                "blockNumber": hex(target_block),
-            }]
+    def calculate_bid(self, net_profit_usd, competition_level=0.0):
+        """
+        competition_level: 0.0 (нет конкурентов) — 1.0 (максимум)
+        """
+        base_fee = self._get_base_fee()
+        
+        # Priority Fee Escalation
+        priority_fee = self.base_fee * (1 + competition_level * 3)
+        priority_fee = min(priority_fee, self.max_fee)
+        
+        # Flashbots Tip (аукцион за позицию)
+        tip_percent = 0.5 * (1 + competition_level * 2)
+        tip_percent = min(tip_percent, MAX_TIP_PERCENT)
+        tip_usd = net_profit_usd * (tip_percent / 100)
+        
+        # Total gas cost
+        gas_eth = 500_000 * (base_fee + priority_fee) * 1e-9
+        gas_usd = gas_eth * 3500
+        total_cost = gas_usd + tip_usd
+        
+        return {
+            "base_fee": base_fee,
+            "priority_fee": priority_fee,
+            "tip_usd": tip_usd,
+            "tip_percent": tip_percent,
+            "total_cost": total_cost,
         }
-        r = requests.post(FLASHBOTS_RELAY, json=payload)
-        return r.json()
-    
-    def simulate(self, signed_tx, block):
-        """Симуляция перед отправкой — проверяем что транзакция успешна."""
-        payload = {
-            "jsonrpc": "2.0",
-            "method": "eth_callBundle",
-            "params": [{
-                "txs": [signed_tx],
-                "blockNumber": hex(block),
-            }]
-        }
-        return requests.post(FLASHBOTS_RELAY, json=payload).json()
 
-# ─── 4. Main Loop ───────────────────────────────────────────────
+# ─── 2. Probability Engine ──────────────────────────────────────
+class ProbabilityEngine:
+    """
+    Оценивает шанс что наша tx будет первой.
+    Факторы: латентность, tip, priority fee, ликвидность.
+    """
+    def __init__(self, w3):
+        self.w3 = w3
+        self.latency_ms = self._measure_latency()
+    
+    def _measure_latency(self):
+        start = time.time()
+        requests.post("https://relay.flashbots.net", 
+                     json={"jsonrpc":"2.0","method":"eth_blockNumber","id":1})
+        return (time.time() - start) * 1000
+    
+    def estimate_competitors(self, spread_bps):
+        """Чем больше спред — тем больше ботов его видят."""
+        return max(0, int((spread_bps - 10) / 5))
+    
+    def calculate(self, opp, gas_bid):
+        competitors = self.estimate_competitors(opp["spread_bps"])
+        
+        # Факторы успеха
+        latency_factor = max(0, 1 - self.latency_ms / 1000)
+        tip_advantage = min(gas_bid["tip_percent"] / 2.0 / (competitors + 1), 1)
+        priority_factor = min(gas_bid["priority_fee"] / 10, 1)
+        
+        # Win probability
+        win_prob = (0.30 * latency_factor + 
+                   0.35 * tip_advantage + 
+                   0.20 * priority_factor + 
+                   0.15 * 1.0)  # liquidity factor
+        
+        if competitors > 0:
+            win_prob *= 1 / (1 + competitors * 0.3)
+        
+        # Expected Value
+        ev = (win_prob * opp["net_profit_usd"] - 
+              (1 - win_prob) * gas_bid["total_cost"])
+        
+        # Recommendation
+        if win_prob < 0.3:
+            rec = "SKIP"
+        elif ev < 0:
+            rec = "WAIT"
+        else:
+            rec = "EXECUTE"
+        
+        return {
+            "win_probability": win_prob,
+            "expected_value": ev,
+            "competitors": competitors,
+            "recommendation": rec,
+        }
+
+# ─── 3. Main Loop (v2.0) ───────────────────────────────────────
 def main():
-    w3 = Web3(Web3.HTTPProvider(FLASHBOTS_RPC))
-    oracle = PriceOracle()
-    engine = StrategyEngine()
-    mev = MEVGuard()
+    w3 = Web3(Web3.HTTPProvider("https://rpc.flashbots.net"))
+    gas_engine = GasEscalationEngine(w3)
+    prob_engine = ProbabilityEngine(w3)
     
     while True:
-        prices = oracle.scan("ETH")
-        opps = engine.find_opportunities(prices)
+        # 1. Находим возможность
+        opp = find_best_opportunity()  # парсинг цен...
+        if not opp:
+            time.sleep(10)
+            continue
         
-        if opps:
-            best = opps[0]
-            tx = build_flash_loan_tx(best)
+        # 2. Оцениваем конкуренцию
+        competition = min(opp["spread_bps"] / 100, 1.0)
+        
+        # 3. Gas bid (повышаем fee если конкуренция)
+        gas_bid = gas_engine.calculate_bid(opp["net_profit_usd"], competition)
+        
+        # 4. Вероятность успеха
+        prob = prob_engine.calculate(opp, gas_bid)
+        
+        # 5. Решение
+        if prob["recommendation"] == "EXECUTE":
+            tx = build_tx(opp, gas_bid)
             signed = sign_tx(tx)
-            
-            # Симуляция → отправка через Flashbots
-            sim = mev.simulate(signed, w3.eth.block_number + 1)
-            if "error" not in sim:
-                result = mev.send_bundle(signed, w3.eth.block_number + 2)
-                logging.info(f"Bundle sent: {result}")
+            tip_wei = int(gas_bid["tip_usd"] / 3500 * 1e18)
+            send_bundle(signed, w3.eth.block_number + 2, tip_wei)
+            logging.info(f"EXECUTED: win={prob['win_probability']:.1%}")
+        else:
+            logging.info(f"SKIPPED: {prob['recommendation']}")
         
         time.sleep(12)
 

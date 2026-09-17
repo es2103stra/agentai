@@ -241,3 +241,39 @@ python app.py
 ```
 
 **Готово! Один язык, простая установка, всё работает.** 🚀
+
+---
+
+## 🤖 AI Agent — Autonomous Computer Use
+
+Полноценный AI-агент с computer use, голосовым вводом и циклическим выполнением задач!
+
+### Возможности
+
+- ✅ **Computer Use** — управление мышью и клавиатурой
+- ✅ **Terminal Execution** — выполнение команд
+- ✅ **Voice Input** — распознавание речи (Whisper API)
+- ✅ **Loop Execution** — цикл пока задача не выполнена
+- ✅ **OpenAI GPT-4** — принятие решений
+- ✅ **20+ инструментов** — web, files, system, browser, code execution
+
+### Запуск AI-агента
+
+```bash
+cd python
+pip install -r agent_requirements.txt
+export OPENAI_API_KEY="your-key-here"
+python agent.py
+```
+
+### Примеры задач
+
+```
+📝 Открой браузер и найди погоду в Москве
+📝 Создай файл test.txt с содержимым "Hello World"
+📝 Сделай скриншот экрана и сохрани как screenshot.png
+📝 Найди все Python файлы в текущей директории
+📝 voice  (голосовой ввод)
+```
+
+Подробная документация: [`python/AGENT_README.md`](python/AGENT_README.md)

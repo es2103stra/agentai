@@ -5,10 +5,10 @@
 ## 🚀 Быстрый старт
 
 ```bash
-# 1. Перейти в папку проекта
+# 1. Перейти в папку Python проекта
 cd python
 
-# 2. Установить зависимости (одной командой)
+# 2. Установить зависимости (одной командой!)
 pip install -r requirements.txt
 
 # 3. Запустить сервер
@@ -20,18 +20,24 @@ python app.py
 
 **Всё! Никакого Node.js, npm, React — только Python.**
 
-## 📦 Что внутри
+## 📦 Структура проекта
 
 ```
-python/
-├── app.py                  # Flask веб-сервер + весь бэкенд
-├── requirements.txt        # Зависимости (pip install)
-├── templates/
-│   └── index.html         # Дашборд (HTML + Tailwind + Chart.js)
-└── README.md              # Эта документация
+.
+├── python/                      # Python Full Stack приложение
+│   ├── app.py                  # Flask веб-сервер + весь бэкенд
+│   ├── requirements.txt        # Зависимости (pip install)
+│   ├── templates/
+│   │   └── index.html         # Дашборд (HTML + Tailwind + Chart.js)
+│   └── README.md              # Подробная документация Python версии
+│
+├── src/                         # React демо-страница (опционально)
+│   └── App.tsx                 # Лендинг с описанием Python проекта
+│
+└── README.md                    # Этот файл
 ```
 
-## 🎯 Функциональность
+## 🎯 Что внутри Python версии
 
 ### 1. Price Oracle (Парсинг цен)
 - Парсит цены с 6 DEX в реальном времени
@@ -145,6 +151,41 @@ win_probability = (
 - Нужна оптимизация: VPS, low latency, capital
 - Реально заработать при правильной настройке
 
+## 🎓 Преимущества Python версии
+
+✅ **Один язык** — не нужно учить JavaScript + Python  
+✅ **Простая установка** — `pip install` вместо `npm install`  
+✅ **Быстрый старт** — `python app.py` и готово  
+✅ **Легко расширять** — всё в одном файле `app.py`  
+✅ **Полный контроль** — бэкенд и фронтенд на Python  
+✅ **Минимум зависимостей** — Flask + Web3.py + requests  
+
+## 📚 Документация
+
+Подробная документация Python версии: [`python/README.md`](python/README.md)
+
+## 🔐 Безопасность
+
+- **Приватный ключ** — никогда не коммитить в git
+- **Тестнет** — использовать Sepolia для разработки
+- **MEV защита** — всегда через Flashbots
+- **Gas лимит** — не превышать MAX_PRIORITY_FEE_GWEI
+
+## 📝 Логирование
+
+Все операции логируются в консоль:
+
+```
+============================================================
+  Flash Arbitrage Engine — Python Full Stack
+  Dashboard: http://localhost:5000
+  Network: Sepolia Testnet
+  MEV: Flashbots Protect (free)
+============================================================
+ * Running on http://0.0.0.0:5000
+127.0.0.1 - - [15/Jan/2026 14:23:45] "GET /api/opportunities HTTP/1.1" 200 -
+```
+
 ## 🛠️ Расширение функциональности
 
 ### Добавить реальную торговлю
@@ -172,56 +213,6 @@ def fetch_uniswap_price():
     return r.json()['data']['pool']['token0Price']
 ```
 
-### Добавить базу данных
-
-```python
-# Сохранять историю сделок
-import sqlite3
-
-conn = sqlite3.connect('trades.db')
-conn.execute('''CREATE TABLE trades
-                (id INTEGER PRIMARY KEY, token TEXT, profit REAL, timestamp REAL)''')
-```
-
-## 🔐 Безопасность
-
-- **Приватный ключ** — никогда не коммитить в git
-- **Тестнет** — использовать Sepolia для разработки
-- **MEV защита** — всегда через Flashbots
-- **Gas лимит** — не превышать MAX_PRIORITY_FEE_GWEI
-
-## 📝 Логирование
-
-Все операции логируются в консоль:
-
-```
-============================================================
-  Flash Arbitrage Engine — Python Full Stack
-  Dashboard: http://localhost:5000
-  Network: Sepolia Testnet
-  MEV: Flashbots Protect (free)
-============================================================
- * Running on http://0.0.0.0:5000
-127.0.0.1 - - [15/Jan/2026 14:23:45] "GET /api/opportunities HTTP/1.1" 200 -
-```
-
-## 🎓 Обучение
-
-Этот проект — отличная база для изучения:
-- DeFi арбитраж
-- Flash loans
-- MEV protection
-- Web3.py
-- Flask веб-разработка
-- Real-time данные
-
-## 📚 Ресурсы
-
-- [Flask Docs](https://flask.palletsprojects.com/)
-- [Web3.py Docs](https://web3py.readthedocs.io/)
-- [Flashbots Docs](https://docs.flashbots.net/)
-- [Aave V3 Docs](https://docs.aave.com/developers/)
-
 ## ⚠️ Дисклеймер
 
 Этот код для **образовательных целей** и тестирования на **Sepolia testnet**.
@@ -232,13 +223,12 @@ conn.execute('''CREATE TABLE trades
 - Управление рисками
 - Юридическая консультация
 
-## 🎉 Преимущества Python версии
+## 📚 Ресурсы
 
-✅ **Один язык** — не нужно учить JavaScript + Python  
-✅ **Простая установка** — `pip install` вместо `npm install`  
-✅ **Быстрый старт** — `python app.py` и готово  
-✅ **Легко расширять** — всё в одном файле `app.py`  
-✅ **Полный контроль** — бэкенд и фронтенд на Python  
+- [Flask Docs](https://flask.palletsprojects.com/)
+- [Web3.py Docs](https://web3py.readthedocs.io/)
+- [Flashbots Docs](https://docs.flashbots.net/)
+- [Aave V3 Docs](https://docs.aave.com/developers/)
 
 ---
 

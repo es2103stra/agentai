@@ -85,21 +85,38 @@ python self_healing_agent.py "Создай Flask API"
 python self_healing_agent.py --daemon
 ```
 
+### Document Agent
+```bash
+cd python
+pip install python-docx openai
+export OPENAI_API_KEY="your-key"
+
+# Анализ документа
+python document_agent.py analyze report.docx
+
+# Генерация из данных
+python document_agent.py generate template.docx --data data.json
+
+# Автогенерация отчёта с AI
+python document_agent.py auto-report template.docx "Квартальный отчёт"
+```
+
 ---
 
 ## 📊 Сравнение проектов
 
-| Характеристика | Flash Arbitrage | AI Agent | Self-Healing Agent |
-|----------------|-----------------|----------|-------------------|
-| **Язык** | Python | Python | Python |
-| **UI** | Flask + HTML | Terminal + Voice | Terminal |
-| **Зависимости** | 5 пакетов | 12 пакетов | 1 пакет (openai) |
-| **API** | OpenAI не нужен | OpenAI обязателен | OpenAI обязателен |
-| **Сложность** | Средняя | Высокая | Средняя |
-| **Стоимость** | $0 (тестнет) | ~$0.01-0.10/задача | ~$0.05-0.20/задача |
-| **Безопасность** | Высокая | Требует осторожности | Высокая (workspace) |
-| **Фон** | ❌ | ❌ | ✅ Daemon mode |
-| **Self-healing** | ❌ | ❌ | ✅ Авто-исправление |
+| Характеристика | Flash Arbitrage | AI Agent | Self-Healing Agent | Document Agent |
+|----------------|-----------------|----------|-------------------|----------------|
+| **Язык** | Python | Python | Python | Python |
+| **UI** | Flask + HTML | Terminal + Voice | Terminal | CLI |
+| **Зависимости** | 5 пакетов | 12 пакетов | 1 пакет (openai) | 2 пакета (docx, openai) |
+| **API** | OpenAI не нужен | OpenAI обязателен | OpenAI обязателен | OpenAI для автогенерации |
+| **Сложность** | Средняя | Высокая | Средняя | Низкая |
+| **Стоимость** | $0 (тестнет) | ~$0.01-0.10/задача | ~$0.05-0.20/задача | ~$0.01-0.05/документ |
+| **Безопасность** | Высокая | Требует осторожности | Высокая (workspace) | Высокая |
+| **Фон** | ❌ | ❌ | ✅ Daemon mode | ❌ |
+| **Self-healing** | ❌ | ❌ | ✅ Авто-исправление | ❌ |
+| **DOCX** | ❌ | ❌ | ❌ | ✅ Полная поддержка |
 
 ---
 
@@ -252,11 +269,12 @@ python self_healing_agent.py --daemon
 
 ---
 
-**Готово! Три мощных Python проекта в одном.** 🎉
+**Готово! Четыре мощных Python проекта в одном.** 🎉
 
 - **Flash Arbitrage** — для DeFi арбитража
 - **AI Agent** — для автономной автоматизации с computer use
 - **Self-Healing Agent** — для генерации кода с авто-исправлением
+- **Document Agent** — для автоматизации отчётов на основе DOCX
 
 Все проекты полностью на Python, с простой установкой и подробной документацией.
 
@@ -323,3 +341,79 @@ logs/
 ```
 
 **Документация:** `python/SELF_HEALING_README.md`
+
+---
+
+## 📄 Document Agent (Новое!)
+
+Модуль для автоматизации отчётов на основе DOCX шаблонов:
+
+### Возможности
+- ✅ Анализ структуры документов
+- ✅ Извлечение плейсхолдеров `{{placeholder}}`
+- ✅ Генерация документов из данных
+- ✅ Автогенерация контента с GPT-4
+- ✅ Пакетная генерация отчётов
+- ✅ Сохранение стилей и форматирования
+
+### Как работает
+
+```
+1. Создаёте шаблон DOCX с плейсхолдерами:
+   {{project_name}}, {{deadline}}, {{budget}}
+
+2. Агент анализирует структуру шаблона
+
+3. Заполняете плейсхолдеры:
+   - Вручную (из JSON)
+   - Автоматически (GPT-4 генерирует контент)
+
+4. Генерируется новый документ с теми же стилями
+```
+
+### Примеры задач
+
+```bash
+# Анализ документа
+python document_agent.py analyze report.docx
+
+# Генерация из данных
+python document_agent.py generate template.docx --data data.json
+
+# Автогенерация с AI
+python document_agent.py auto-report template.docx "Создай квартальный отчёт"
+```
+
+### Практическое применение
+
+**Еженедельные отчёты:**
+```python
+tasks = [
+    "Отчёт за неделю 1: Запуск функционала",
+    "Отчёт за неделю 2: Исправление багов",
+    "Отчёт за неделю 3: Оптимизация"
+]
+results = auto_gen.batch_generate('weekly_template.docx', tasks)
+```
+
+**Финансовые отчёты:**
+```python
+data = {
+    "company_name": "ООО Пример",
+    "q3_revenue": "5,000,000",
+    "q4_revenue": "6,500,000"
+}
+result = generator.generate_from_data(data, 'financial_report.docx')
+```
+
+**Персонализированные письма:**
+```python
+clients = [
+    {"client_name": "Иван Иванов", "personal_message": "..."},
+    {"client_name": "Мария Сидорова", "personal_message": "..."}
+]
+for client in clients:
+    generator.generate_from_data(client, f'letter_{client["name"]}.docx')
+```
+
+**Документация:** `python/DOCUMENT_AGENT_README.md`

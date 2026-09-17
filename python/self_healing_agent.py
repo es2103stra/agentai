@@ -612,6 +612,80 @@ class SelfHealingAgent:
         # Можно добавить email, telegram, slack уведомления
 
 
+# ─── Document Integration ────────────────────────────────────────
+
+class DocumentIntegration:
+    """Интеграция с модулем работы с документами."""
+    
+    def __init__(self):
+        try:
+            from document_agent import DocumentAnalyzer, DocumentGenerator, AutoReportGenerator
+            self.analyzer = DocumentAnalyzer()
+            self.generator = DocumentGenerator()
+            self.auto_gen = AutoReportGenerator()
+            self.available = True
+        except ImportError:
+            self.available = False
+            print("⚠️  Document agent не доступен. Установите: pip install python-docx")
+    
+    def analyze_document(self, file_path: str) -> Dict[str, Any]:
+        """Анализирует документ."""
+        if not self.available:
+            return {"success": False, "error": "Document agent not available"}
+        
+        try:
+            structure = self.analyzer.analyze(file_path)
+            placeholders = self.analyzer.extract_placeholders()
+            
+            return {
+                "success": True,
+                "title": structure.title,
+                "sections": len(structure.sections),
+                "tables": structure.tables_count,
+                "images": structure.images_count,
+                "placeholders": placeholders
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def generate_document(self, template_path: str, data: Dict[str, Any], output_path: str) -> Dict[str, Any]:
+        """Генерирует документ из данных."""
+        if not self.available:
+            return {"success": False, "error": "Document agent not available"}
+        
+        try:
+            self.generator.load_template(template_path)
+            result = self.generator.generate_from_data(data, output_path)
+            
+            return {
+                "success": True,
+                "path": result.path,
+                "placeholders_filled": result.placeholders_filled,
+                "word_count": result.word_count,
+                "generation_time": result.generation_time
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def auto_generate_report(self, template_path: str, task: str, output_path: str = None) -> Dict[str, Any]:
+        """Автоматически генерирует отчёт с AI."""
+        if not self.available:
+            return {"success": False, "error": "Document agent not available"}
+        
+        try:
+            result = self.auto_gen.generate_report(template_path, task, output_path)
+            
+            return {
+                "success": True,
+                "path": result.path,
+                "placeholders_filled": result.placeholders_filled,
+                "word_count": result.word_count,
+                "generation_time": result.generation_time
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+
 # ─── Main ────────────────────────────────────────────────────────
 
 def main():
@@ -621,12 +695,35 @@ def main():
     print("="*70)
     
     agent = SelfHealingAgent()
+    doc_integration = DocumentIntegration()
     
     # Режим работы
     if len(sys.argv) > 1:
         if sys.argv[1] == "--daemon":
             # Фоновый режим
             agent.run_daemon()
+        elif sys.argv[1] == "--doc-analyze" and len(sys.argv) > 2:
+            # Анализ документа
+            file_path = sys.argv[2]
+            result = doc_integration.analyze_document(file_path)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        elif sys.argv[1] == "--doc-generate" and len(sys.argv) > 4:
+            # Генерация документа
+            template_path = sys.argv[2]
+            data_path = sys.argv[3]
+            output_path = sys.argv[4]
+            
+            with open(data_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            result = doc_integration.generate_document(template_path, data, output_path)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        elif sys.argv[1] == "--doc-auto" and len(sys.argv) > 3:
+            # Автогенерация отчёта
+            template_path = sys.argv[2]
+            task = " ".join(sys.argv[3:])
+            result = doc_integration.auto_generate_report(template_path, task)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
         else:
             # Задача из аргументов
             task = " ".join(sys.argv[1:])
@@ -639,7 +736,10 @@ def main():
         print("\nРежимы:")
         print("  1. Одна задача")
         print("  2. Daemon mode (фон)")
-        print("  3. Выход\n")
+        print("  3. Анализ документа")
+        print("  4. Генерация документа")
+        print("  5. Автогенерация отчёта")
+        print("  6. Выход\n")
         
         choice = input("Выберите: ").strip()
         
@@ -649,6 +749,29 @@ def main():
                 agent.execute_task(task)
         elif choice == "2":
             agent.run_daemon()
+        elif choice == "3":
+            file_path = input("\n📄 Путь к документу: ").strip()
+            if file_path:
+                result = doc_integration.analyze_document(file_path)
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+        elif choice == "4":
+            template_path = input("\n📋 Путь к шаблону: ").strip()
+            data_path = input("📊 Путь к данным (JSON): ").strip()
+            output_path = input("📄 Путь для сохранения: ").strip()
+            
+            if template_path and data_path and output_path:
+                with open(data_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                result = doc_integration.generate_document(template_path, data, output_path)
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+        elif choice == "5":
+            template_path = input("\n📋 Путь к шаблону: ").strip()
+            task = input("🤖 Задача для AI: ").strip()
+            
+            if template_path and task:
+                result = doc_integration.auto_generate_report(template_path, task)
+                print(json.dumps(result, ensure_ascii=False, indent=2))
         else:
             print("👋 До свидания!")
 

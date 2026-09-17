@@ -7,6 +7,7 @@
 1. **Flash Arbitrage Engine** — DeFi арбитраж с MEV защитой
 2. **AI Agent** — автономный агент с computer use и голосовым вводом
 3. **Self-Healing Agent** — генерация кода с автоматическим исправлением ошибок
+4. **Document Agent** — анализ DOCX и автоматическая генерация отчётов
 
 ## 🚀 Быстрый старт
 
@@ -313,3 +314,42 @@ python self_healing_agent.py "Создай Flask API с CRUD"
 ```
 
 Подробная документация: [`python/SELF_HEALING_README.md`](python/SELF_HEALING_README.md)
+
+---
+
+### 4. Document Agent — Автоматизация отчётов (Новое!)
+
+Модуль для анализа DOCX документов и автоматической генерации отчётов:
+- ✅ Анализ структуры документов (заголовки, секции, таблицы)
+- ✅ Извлечение плейсхолдеров `{{placeholder}}`
+- ✅ Генерация новых документов на основе шаблонов
+- ✅ Автогенерация контента с помощью GPT-4
+- ✅ Пакетная генерация отчётов
+- ✅ Сохранение всех стилей и форматирования
+
+**Запуск:**
+```bash
+cd python
+pip install python-docx openai
+export OPENAI_API_KEY="your-key"
+
+# Анализ документа
+python document_agent.py analyze report.docx
+
+# Генерация из данных
+python document_agent.py generate template.docx --data data.json
+
+# Автогенерация отчёта с AI
+python document_agent.py auto-report template.docx "Квартальный отчёт Q4 2024"
+```
+
+**Примеры задач:**
+```
+📄 Анализ структуры отчёта
+📝 Генерация персонализированных писем
+📊 Создание финансовых отчётов с таблицами
+🤖 Автогенерация маркетингового анализа
+📦 Пакетная генерация еженедельных отчётов
+```
+
+Подробная документация: [`python/DOCUMENT_AGENT_README.md`](python/DOCUMENT_AGENT_README.md)

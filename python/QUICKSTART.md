@@ -72,19 +72,34 @@ export OPENAI_API_KEY="your-key"
 python agent.py
 ```
 
+### Self-Healing Agent
+```bash
+cd python
+pip install openai
+export OPENAI_API_KEY="your-key"
+
+# Одна задача
+python self_healing_agent.py "Создай Flask API"
+
+# Daemon mode (фон)
+python self_healing_agent.py --daemon
+```
+
 ---
 
 ## 📊 Сравнение проектов
 
-| Характеристика | Flash Arbitrage | AI Agent |
-|----------------|-----------------|----------|
-| **Язык** | Python | Python |
-| **UI** | Flask + HTML | Terminal + Voice |
-| **Зависимости** | 5 пакетов | 12 пакетов |
-| **API** | OpenAI не нужен | OpenAI обязателен |
-| **Сложность** | Средняя | Высокая |
-| **Стоимость** | $0 (тестнет) | ~$0.01-0.10/задача |
-| **Безопасность** | Высокая | Требует осторожности |
+| Характеристика | Flash Arbitrage | AI Agent | Self-Healing Agent |
+|----------------|-----------------|----------|-------------------|
+| **Язык** | Python | Python | Python |
+| **UI** | Flask + HTML | Terminal + Voice | Terminal |
+| **Зависимости** | 5 пакетов | 12 пакетов | 1 пакет (openai) |
+| **API** | OpenAI не нужен | OpenAI обязателен | OpenAI обязателен |
+| **Сложность** | Средняя | Высокая | Средняя |
+| **Стоимость** | $0 (тестнет) | ~$0.01-0.10/задача | ~$0.05-0.20/задача |
+| **Безопасность** | Высокая | Требует осторожности | Высокая (workspace) |
+| **Фон** | ❌ | ❌ | ✅ Daemon mode |
+| **Self-healing** | ❌ | ❌ | ✅ Авто-исправление |
 
 ---
 
@@ -192,7 +207,9 @@ python agent.py
 
 - **Flash Arbitrage:** `python/README.md`
 - **AI Agent:** `python/AGENT_README.md`
-- **Примеры:** `python/agent_examples.py`
+- **Self-Healing Agent:** `python/SELF_HEALING_README.md`
+- **Примеры AI Agent:** `python/agent_examples.py`
+- **Примеры Self-Healing:** `python/self_healing_examples.py`
 
 ---
 
@@ -235,9 +252,74 @@ python agent.py
 
 ---
 
-**Готово! Два мощных Python проекта в одном.** 🎉
+**Готово! Три мощных Python проекта в одном.** 🎉
 
-- Flash Arbitrage — для DeFi арбитража
-- AI Agent — для автономной автоматизации
+- **Flash Arbitrage** — для DeFi арбитража
+- **AI Agent** — для автономной автоматизации с computer use
+- **Self-Healing Agent** — для генерации кода с авто-исправлением
 
-Оба проекта полностью на Python, с простой установкой и подробной документацией.
+Все проекты полностью на Python, с простой установкой и подробной документацией.
+
+---
+
+## 🔄 Self-Healing AI Agent (Новое!)
+
+Агент с автоматическим исправлением ошибок:
+
+### Возможности
+- ✅ Генерация файлов по описанию
+- ✅ Автоматическое тестирование
+- ✅ Self-healing (редактирование при ошибках)
+- ✅ Фоновый режим (daemon)
+- ✅ Очередь задач
+- ✅ Полное логирование
+
+### Как работает
+
+```
+1. Генерирует файлы (GPT-4)
+2. Запускает для тестирования
+3. Если ошибка:
+   ├─ Анализирует проблему
+   ├─ РЕДАКТИРУЕТ файл (не удаляет!)
+   ├─ Повторный запуск
+   └─ Цикл до успеха
+4. Логирует все попытки
+```
+
+### Примеры задач
+
+```bash
+# Простой скрипт
+python self_healing_agent.py "Создай калькулятор"
+
+# Веб-приложение
+python self_healing_agent.py "Создай Flask API с CRUD"
+
+# Многофайловый проект
+python self_healing_agent.py "Создай проект для заметок с модульной структурой"
+
+# Daemon mode
+python self_healing_agent.py --daemon
+echo "Создай скрипт анализа" >> workspace/task_queue.txt
+```
+
+### Преимущества
+
+✅ **Не удаляет файлы** — только редактирует  
+✅ **Сохраняет историю** — все версии и исправления  
+✅ **Фоновый режим** — работает как сервис  
+✅ **Очередь задач** — пакетная обработка  
+✅ **Полные логи** — анализ успешности  
+
+### Структура
+
+```
+workspace/          # Сгенерированные файлы
+logs/
+├── tasks.jsonl    # Список задач
+├── task_*.json    # Детали исправлений
+└── daemon_state.json
+```
+
+**Документация:** `python/SELF_HEALING_README.md`

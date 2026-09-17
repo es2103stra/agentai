@@ -10,6 +10,7 @@ import StrategyPanel from './components/StrategyPanel';
 import PriceChart from './components/PriceChart';
 import FlashLoanSimulator from './components/FlashLoanSimulator';
 import PriceScanner from './components/PriceScanner';
+import PythonCodePanel from './components/PythonCodePanel';
 import { 
   generateArbitrageOpportunities, 
   flashLoanStrategies as initialStrategies,
@@ -283,9 +284,11 @@ function App() {
           </div>
         </main>
 
-        {/* Footer */}
-        <footer className="border-t border-gray-800/50 mt-8">
-          <div className="max-w-7xl mx-auto px-4 py-4">
+          {/* Python Backend Source Code */}
+          <PythonCodePanel />
+
+          {/* Footer */}
+        <footer className="border-t border-gray-800/50 mt-8">          <div className="max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between text-xs text-gray-600">
               <span>Flash Arbitrage Engine v0.1.0 — Testnet Mode</span>
               <span>MEV Protection: Flashbots Protect | Network: Sepolia</span>

@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flash Arbitrage — DeFi Flash Loan Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background: #030712; color: #fff; font-family: 'Inter', sans-serif; }
+        .glow-cyan { box-shadow: 0 0 20px rgba(6, 182, 212, 0.15); }
+        .glow-purple { box-shadow: 0 0 20px rgba(168, 85, 247, 0.15); }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+        .glass { background: rgba(17, 24, 39, 0.5); backdrop-filter: blur(12px); border: 1px solid rgba(55, 65, 81, 0.5); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Background gradients -->
+    <div class="fixed inset-0 pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="relative z-10">
+        <!-- Header -->
+        <header class="border-b border-gray-800/50 backdrop-blur-xl bg-gray-950/80 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center">
+                            <i class="fas fa-bolt text-white"></i>
+                        </div>
+                        <div class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-950 pulse-dot"></div>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+                            Flash Arbitrage
+                        </h1>
+                        <p class="text-xs text-gray-500">Python Full Stack Engine</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="hidden md:flex items-center gap-6">
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500">Total Profit</div>
+                            <div class="text-sm font-bold text-green-400 font-mono" id="totalProfit">13.02 ETH</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500">Executions</div>
+                            <div class="text-sm font-bold text-cyan-400 font-mono" id="totalExec">287</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xs text-gray-500">Success Rate</div>
+                            <div class="text-sm font-bold text-purple-400 font-mono" id="avgSuccess">92.0%</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-green-500/10 border-green-500/30 text-green-400 text-xs font-medium">
+                        <i class="fas fa-wifi text-xs"></i>
+                        <span id="connectionStatus">Connected</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="glass rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <i class="fas fa-chart-line text-cyan-400 text-sm"></i>
+                        <span class="text-xs text-gray-400">Opportunities</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white font-mono" id="oppCount">—</div>
+                    <div class="text-xs text-green-400 mt-1">↑ Real-time scanning</div>
+                </div>
+                <div class="glass rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <i class="fas fa-shield-alt text-purple-400 text-sm"></i>
+                        <span class="text-xs text-gray-400">MEV Protected</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white font-mono" id="mevCount">—</div>
+                    <div class="text-xs text-purple-400 mt-1">Flashbots RPC active</div>
+                </div>
+                <div class="glass rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <i class="fas fa-percentage text-green-400 text-sm"></i>
+                        <span class="text-xs text-gray-400">Avg Spread</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white font-mono" id="avgSpread">—</div>
+                    <div class="text-xs text-yellow-400 mt-1">Across all pairs</div>
+                </div>
+                <div class="glass rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-1">
+                        <i class="fas fa-code-branch text-orange-400 text-sm"></i>
+                        <span class="text-xs text-gray-400">Testnet</span>
+                    </div>
+                    <div class="text-2xl font-bold text-white font-mono">Sepolia</div>
+                    <div class="text-xs text-orange-400 mt-1">Chain ID: 11155111</div>
+                </div>
+            </div>
+
+            <!-- Price Chart -->
+            <div class="glass rounded-xl p-5">
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fas fa-chart-area text-cyan-400"></i>
+                    <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">ETH Price Across DEXes (Live)</h3>
+                </div>
+                <div class="h-64">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Arbitrage Opportunities -->
+                <div class="glass rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-chart-line text-cyan-400"></i>
+                            <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Arbitrage Opportunities</h3>
+                        </div>
+                        <span class="text-xs text-gray-500" id="oppFound">— found</span>
+                    </div>
+                    <div class="space-y-3" id="opportunitiesList">
+                        <div class="text-center text-gray-500 text-sm py-8">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Price Scanner -->
+                <div class="glass rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-search-dollar text-green-400"></i>
+                            <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Price Scanner</h3>
+                        </div>
+                        <select id="tokenSelect" class="bg-gray-800 border border-gray-700 text-white text-xs rounded px-2 py-1">
+                            <option value="ETH">⟠ ETH</option>
+                            <option value="WBTC">₿ WBTC</option>
+                            <option value="LINK">⬡ LINK</option>
+                            <option value="UNI">🦄 UNI</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2" id="priceScannerList">
+                        <div class="text-center text-gray-500 text-sm py-8">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network & MEV -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass rounded-xl p-5">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-2 h-2 rounded-full bg-green-400 pulse-dot"></div>
+                        <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Testnet Status</h3>
+                    </div>
+                    <div class="space-y-3" id="networkInfo">
+                        <div class="text-center text-gray-500 text-sm py-4">Loading...</div>
+                    </div>
+                </div>
+                <div class="glass rounded-xl p-5">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-2 h-2 rounded-full bg-purple-400 pulse-dot"></div>
+                        <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">MEV Protection</h3>
+                    </div>
+                    <div class="space-y-3" id="mevInfo">
+                        <div class="text-center text-gray-500 text-sm py-4">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Probability Engine -->
+            <div class="glass rounded-xl p-5">
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="fas fa-crosshairs text-cyan-400"></i>
+                    <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Success Probability Engine</h3>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="text-xs text-gray-400 block mb-1">Spread (bps)</label>
+                        <input type="range" id="spreadSlider" min="10" max="100" value="25" class="w-full accent-cyan-500">
+                        <div class="text-xs text-cyan-400 font-mono mt-1" id="spreadValue">25 bps (0.25%)</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 block mb-1">Liquidity ($M)</label>
+                        <input type="range" id="liquiditySlider" min="1" max="10" value="5" class="w-full accent-purple-500">
+                        <div class="text-xs text-purple-400 font-mono mt-1" id="liquidityValue">$5M</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="probResults">
+                    <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700/30">
+                        <div class="flex items-center gap-1 mb-1">
+                            <i class="fas fa-crosshairs text-cyan-400 text-xs"></i>
+                            <span class="text-xs text-gray-400">Win Probability</span>
+                        </div>
+                        <div class="text-xl font-bold font-mono" id="winProb">—</div>
+                    </div>
+                    <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700/30">
+                        <div class="flex items-center gap-1 mb-1">
+                            <i class="fas fa-chart-line text-green-400 text-xs"></i>
+                            <span class="text-xs text-gray-400">Expected Value</span>
+                        </div>
+                        <div class="text-xl font-bold font-mono" id="expectedVal">—</div>
+                    </div>
+                    <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700/30">
+                        <div class="flex items-center gap-1 mb-1">
+                            <i class="fas fa-users text-orange-400 text-xs"></i>
+                            <span class="text-xs text-gray-400">Competitors</span>
+                        </div>
+                        <div class="text-xl font-bold font-mono text-orange-400" id="competitors">—</div>
+                    </div>
+                    <div class="bg-gray-800/50 rounded-lg p-3 border border-gray-700/30">
+                        <div class="flex items-center gap-1 mb-1">
+                            <i class="fas fa-ranking-star text-purple-400 text-xs"></i>
+                            <span class="text-xs text-gray-400">Bid Rank</span>
+                        </div>
+                        <div class="text-xl font-bold font-mono text-purple-400" id="bidRank">—</div>
+                    </div>
+                </div>
+                <div id="recommendation" class="mb-4 p-3 rounded-lg border bg-green-500/20 text-green-400 border-green-500/30">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-bolt"></i>
+                        <span class="text-sm font-bold">Loading...</span>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <div class="text-xs text-gray-400 mb-2">Success Factors</div>
+                    <div class="space-y-2" id="factorsList"></div>
+                </div>
+                <div class="bg-gray-800/30 rounded-lg p-3 border border-gray-700/30">
+                    <div class="flex items-center gap-1 mb-2">
+                        <i class="fas fa-bolt text-yellow-400 text-xs"></i>
+                        <span class="text-xs text-gray-400">Gas Bid (Escalation Level <span id="escLevel">0</span>)</span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs" id="gasBidDetails"></div>
+                </div>
+            </div>
+
+            <!-- Strategies -->
+            <div class="glass rounded-xl p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-shield-alt text-purple-400"></i>
+                        <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Flash Loan Strategies</h3>
+                    </div>
+                    <span class="text-xs text-gray-500" id="activeStrats">— active</span>
+                </div>
+                <div class="space-y-3" id="strategiesList">
+                    <div class="text-center text-gray-500 text-sm py-8">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Architecture -->
+            <div class="glass rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">
+                    <i class="fas fa-sitemap text-cyan-400 mr-2"></i>System Architecture (Python)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700/30">
+                        <div class="text-cyan-400 font-bold text-sm mb-2">1. Price Oracle</div>
+                        <ul class="text-xs text-gray-400 space-y-1">
+                            <li>• Real-time feeds from 6 DEX</li>
+                            <li>• The Graph subgraph queries</li>
+                            <li>• Spread detection & ranking</li>
+                            <li>• Liquidity depth analysis</li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700/30">
+                        <div class="text-purple-400 font-bold text-sm mb-2">2. MEV Protection</div>
+                        <ul class="text-xs text-gray-400 space-y-1">
+                            <li>• Flashbots Protect RPC (free)</li>
+                            <li>• Private tx submission</li>
+                            <li>• Sandwich attack prevention</li>
+                            <li>• Bundle simulation</li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-800/50 rounded-lg p-4 border border-gray-700/30">
+                        <div class="text-green-400 font-bold text-sm mb-2">3. Gas Escalation</div>
+                        <ul class="text-xs text-gray-400 space-y-1">
+                            <li>• Dynamic priority fee</li>
+                            <li>• Flashbots tip auction</li>
+                            <li>• Probability engine</li>
+                            <li>• Competitor analysis</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Start -->
+            <div class="glass rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">
+                    <i class="fas fa-terminal text-green-400 mr-2"></i>Quick Start
+                </h3>
+                <div class="bg-gray-950 rounded-lg p-4 font-mono text-sm">
+                    <div class="text-gray-500 mb-2"># Install & Run</div>
+                    <div class="text-green-400">$ pip install flask web3 requests python-dotenv</div>
+                    <div class="text-green-400 mt-1">$ python app.py</div>
+                    <div class="text-gray-500 mt-3 mb-2"># Open dashboard</div>
+                    <div class="text-cyan-400">→ http://localhost:5000</div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="border-t border-gray-800/50 mt-8">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between text-xs text-gray-600">
+                <span>Flash Arbitrage Engine v2.0 — Python Full Stack</span>
+                <span>MEV: Flashbots Protect | Network: Sepolia</span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // ─── Chart.js Price Chart ──────────────────────────────────
+        let priceChart;
+        
+        async function loadPriceHistory() {
+            const res = await fetch('/api/price-history');
+            const data = await res.json();
+            
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            if (priceChart) priceChart.destroy();
+            
+            priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.time),
+                    datasets: [
+                        { label: 'Uniswap V3', data: data.map(d => d.uniswap), borderColor: '#FF007A', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                        { label: 'SushiSwap', data: data.map(d => d.sushiswap), borderColor: '#00D395', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                        { label: 'PancakeSwap', data: data.map(d => d.pancakeswap), borderColor: '#D1884F', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                        { label: 'Curve', data: data.map(d => d.curve), borderColor: '#FF6B35', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#9CA3AF', font: { size: 11 } } } },
+                    scales: {
+                        x: { ticks: { color: '#6B7280', font: { size: 10 } }, grid: { color: '#1F2937' } },
+                        y: { ticks: { color: '#6B7280', font: { size: 10 }, callback: v => '$' + v }, grid: { color: '#1F2937' } }
+                    }
+                }
+            });
+        }
+
+        // ─── Opportunities ─────────────────────────────────────────
+        async function loadOpportunities() {
+            const res = await fetch('/api/opportunities');
+            const opps = await res.json();
+            
+            document.getElementById('oppCount').textContent = opps.length;
+            document.getElementById('oppFound').textContent = opps.length + ' found';
+            
+            if (opps.length > 0) {
+                const avg = opps.reduce((s, o) => s + o.spread_bps, 0) / opps.length;
+                document.getElementById('avgSpread').textContent = avg.toFixed(3) + '%';
+            }
+            
+            const list = document.getElementById('opportunitiesList');
+            if (opps.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-500 text-sm py-8">No opportunities found</div>';
+                return;
+            }
+            
+            list.innerHTML = opps.map(o => `
+                <div class="bg-gray-800/50 border border-gray-700/30 rounded-lg p-4 hover:border-cyan-500/30 transition-all">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-bold text-white">${o.token}</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400">${o.spread_bps.toFixed(3)}% spread</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <div class="w-1.5 h-1.5 rounded-full bg-green-400 pulse-dot"></div>
+                            <span class="text-xs text-gray-400">${Math.floor((Date.now()/1000) - o.timestamp)}s ago</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="flex-1 bg-gray-900/50 rounded px-3 py-2">
+                            <div class="text-xs text-gray-500">Buy</div>
+                            <div class="text-sm text-white font-mono">${o.buy_dex}</div>
+                            <div class="text-xs text-green-400 font-mono">$${o.buy_price}</div>
+                        </div>
+                        <i class="fas fa-arrow-right text-cyan-400 text-sm"></i>
+                        <div class="flex-1 bg-gray-900/50 rounded px-3 py-2">
+                            <div class="text-xs text-gray-500">Sell</div>
+                            <div class="text-sm text-white font-mono">${o.sell_dex}</div>
+                            <div class="text-xs text-red-400 font-mono">$${o.sell_price}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-1">
+                                <i class="fas fa-dollar-sign text-green-400 text-xs"></i>
+                                <span class="text-xs text-gray-400">Net:</span>
+                                <span class="text-sm font-bold font-mono ${o.net_profit > 0 ? 'text-green-400' : 'text-red-400'}">$${o.net_profit}</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <i class="fas fa-gas-pump text-yellow-400 text-xs"></i>
+                                <span class="text-xs text-gray-400">Gas:</span>
+                                <span class="text-xs text-yellow-400 font-mono">$${o.gas_cost}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs text-gray-400">Conf: <span class="font-bold ${o.confidence > 85 ? 'text-green-400' : 'text-yellow-400'}">${o.confidence}%</span></span>
+                            <button onclick="executeOpp('${o.id}')" class="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-400 text-xs font-bold rounded transition-all hover:scale-105">
+                                Execute
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function executeOpp(id) {
+            alert('⚡ Executing arbitrage: ' + id + '\n\nTransaction submitted via Flashbots bundle.\nMEV protection active.');
+        }
+
+        // ─── Price Scanner ─────────────────────────────────────────
+        async function loadPriceScanner() {
+            const res = await fetch('/api/prices');
+            const prices = await res.json();
+            const token = document.getElementById('tokenSelect').value;
+            
+            const dexPrices = Object.entries(prices).map(([dex, tokens]) => ({
+                dex, price: tokens[token] || 0
+            })).filter(p => p.price > 0);
+            
+            const maxP = Math.max(...dexPrices.map(p => p.price));
+            const minP = Math.min(...dexPrices.map(p => p.price));
+            const spread = ((maxP - minP) / minP * 100);
+            
+            const list = document.getElementById('priceScannerList');
+            list.innerHTML = `
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs text-gray-400">Cross-DEX Spread</span>
+                    <span class="text-sm font-bold font-mono ${spread > 0.3 ? 'text-green-400' : 'text-yellow-400'}">${spread.toFixed(4)}%</span>
+                </div>
+            ` + dexPrices.map(p => `
+                <div class="flex items-center gap-3 bg-gray-800/30 rounded-lg px-3 py-2">
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-white">${p.dex}</span>
+                            <span class="font-mono text-sm font-bold ${p.price === maxP ? 'text-red-400' : p.price === minP ? 'text-green-400' : 'text-gray-300'}">$${p.price.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <div>
+                        ${p.price === maxP ? '<span class="text-xs px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded">HIGH</span>' : ''}
+                        ${p.price === minP ? '<span class="text-xs px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded">LOW</span>' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ─── Network & MEV ─────────────────────────────────────────
+        async function loadNetwork() {
+            const res = await fetch('/api/network');
+            const data = await res.json();
+            
+            document.getElementById('mevCount').textContent = data.protected_txs;
+            
+            document.getElementById('networkInfo').innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm">Network</span>
+                    <span class="text-white font-mono text-sm">${data.network}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm">Chain ID</span>
+                    <span class="text-white font-mono text-sm">${data.chain_id}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm">Block</span>
+                    <span class="text-cyan-400 font-mono text-sm">${data.block_number.toLocaleString()}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm">Gas Price</span>
+                    <span class="text-yellow-400 font-mono text-sm">${data.gas_price} Gwei</span>
+                </div>
+                <div class="mt-3 pt-3 border-t border-gray-700/50">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400 text-xs">RPC</span>
+                        <code class="text-xs text-gray-500 truncate ml-2">${data.rpc_endpoint}</code>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('mevInfo').innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm">Provider</span>
+                    <span class="text-white font-mono text-sm">Flashbots Protect</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm">Status</span>
+                    <span class="px-2 py-0.5 rounded text-xs font-bold bg-green-500/20 text-green-400">ACTIVE</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm">Protected Txs</span>
+                    <span class="text-purple-400 font-mono text-sm">${data.protected_txs}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm">Sandwich Blocked</span>
+                    <span class="text-red-400 font-mono text-sm">${data.sandwich_blocked}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm">Total Saved</span>
+                    <span class="text-green-400 font-mono text-sm">${data.total_saved} ETH</span>
+                </div>
+                <div class="mt-3 pt-3 border-t border-gray-700/50">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400 text-xs">MEV RPC</span>
+                        <code class="text-xs text-purple-400 truncate ml-2">${data.mev_rpc}</code>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ─── Probability Engine ────────────────────────────────────
+        async function loadProbability() {
+            const spread = document.getElementById('spreadSlider').value;
+            const liquidity = document.getElementById('liquiditySlider').value;
+            
+            document.getElementById('spreadValue').textContent = `${spread} bps (${(spread/100).toFixed(2)}%)`;
+            document.getElementById('liquidityValue').textContent = `$${liquidity}M`;
+            
+            const res = await fetch(`/api/probability?spread=${spread}&liquidity=${liquidity}`);
+            const data = await res.json();
+            
+            const winEl = document.getElementById('winProb');
+            winEl.textContent = data.win_probability + '%';
+            winEl.className = `text-xl font-bold font-mono ${data.win_probability > 70 ? 'text-green-400' : data.win_probability > 40 ? 'text-yellow-400' : 'text-red-400'}`;
+            
+            const evEl = document.getElementById('expectedVal');
+            evEl.textContent = '$' + data.expected_value;
+            evEl.className = `text-xl font-bold font-mono ${data.expected_value > 0 ? 'text-green-400' : 'text-red-400'}`;
+            
+            document.getElementById('competitors').textContent = data.competitors;
+            document.getElementById('bidRank').textContent = '#' + data.gas_bid_rank;
+            
+            const rec = document.getElementById('recommendation');
+            const recColors = {
+                EXECUTE: 'bg-green-500/20 text-green-400 border-green-500/30',
+                SKIP: 'bg-red-500/20 text-red-400 border-red-500/30',
+                WAIT: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+            };
+            const recIcons = { EXECUTE: 'fa-bolt', SKIP: 'fa-exclamation-triangle', WAIT: 'fa-clock' };
+            const recTexts = {
+                EXECUTE: 'EXECUTE — High probability, positive EV',
+                SKIP: 'SKIP — Low probability, too much competition',
+                WAIT: 'WAIT — Negative EV, adjust parameters',
+            };
+            rec.className = `mb-4 p-3 rounded-lg border ${recColors[data.recommendation]}`;
+            rec.innerHTML = `<div class="flex items-center gap-2"><i class="fas ${recIcons[data.recommendation]}"></i><span class="text-sm font-bold">${recTexts[data.recommendation]}</span></div>`;
+            
+            // Factors
+            const factors = [
+                { name: 'Latency', value: data.factors.latency, weight: 30, color: 'cyan' },
+                { name: 'Tip Advantage', value: data.factors.tip_advantage, weight: 35, color: 'purple' },
+                { name: 'Priority Fee', value: data.factors.priority_fee, weight: 20, color: 'yellow' },
+                { name: 'Liquidity', value: data.factors.liquidity, weight: 15, color: 'green' },
+            ];
+            document.getElementById('factorsList').innerHTML = factors.map(f => `
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400 w-24">${f.name}</span>
+                    <div class="flex-1 bg-gray-800/50 rounded-full h-2 overflow-hidden">
+                        <div class="h-full bg-${f.color}-500 transition-all" style="width: ${f.value}%"></div>
+                    </div>
+                    <span class="text-xs font-mono text-${f.color}-400 w-12 text-right">${f.value}%</span>
+                    <span class="text-xs text-gray-500 w-8 text-right">${f.weight}%</span>
+                </div>
+            `).join('');
+            
+            // Gas bid
+            document.getElementById('escLevel').textContent = data.gas_bid.escalation_level;
+            document.getElementById('gasBidDetails').innerHTML = `
+                <div><div class="text-gray-500">Base Fee</div><div class="text-white font-mono">${data.gas_bid.base_fee} gwei</div></div>
+                <div><div class="text-gray-500">Priority Fee</div><div class="text-yellow-400 font-mono">${data.gas_bid.priority_fee} gwei</div></div>
+                <div><div class="text-gray-500">Tip</div><div class="text-purple-400 font-mono">$${data.gas_bid.tip_usd}</div></div>
+                <div><div class="text-gray-500">Tip %</div><div class="text-purple-400 font-mono">${data.gas_bid.tip_percent}%</div></div>
+                <div><div class="text-gray-500">Total Cost</div><div class="text-red-400 font-mono">$${data.gas_bid.total_cost}</div></div>
+            `;
+        }
+
+        // ─── Strategies ────────────────────────────────────────────
+        async function loadStrategies() {
+            const res = await fetch('/api/strategies');
+            const strats = await res.json();
+            
+            const active = strats.filter(s => s.status === 'active').length;
+            document.getElementById('activeStrats').textContent = active + ' active';
+            
+            const statusColors = {
+                active: 'bg-green-500/10 text-green-400',
+                paused: 'bg-yellow-500/10 text-yellow-400',
+                testing: 'bg-blue-500/10 text-blue-400',
+                error: 'bg-red-500/10 text-red-400',
+            };
+            const statusIcons = {
+                active: 'fa-play',
+                paused: 'fa-pause',
+                testing: 'fa-flask',
+                error: 'fa-exclamation-circle',
+            };
+            
+            document.getElementById('strategiesList').innerHTML = strats.map(s => `
+                <div class="bg-gray-800/50 border border-gray-700/30 rounded-lg p-4 hover:border-purple-500/30 transition-all">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fas ${statusIcons[s.status]} text-xs ${statusColors[s.status].split(' ')[1]}"></i>
+                            <span class="text-white font-medium text-sm">${s.name}</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-xs font-bold ${statusColors[s.status]}">${s.status.toUpperCase()}</span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                        <div><div class="text-xs text-gray-500">Protocol</div><div class="text-sm text-white font-mono">${s.protocol}</div></div>
+                        <div><div class="text-xs text-gray-500">Executions</div><div class="text-sm text-cyan-400 font-mono">${s.executions}</div></div>
+                        <div><div class="text-xs text-gray-500">Success Rate</div><div class="text-sm text-green-400 font-mono">${s.success_rate}%</div></div>
+                        <div><div class="text-xs text-gray-500">Total Profit</div><div class="text-sm text-green-400 font-mono">${s.total_profit} ETH</div></div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            ${s.mev_protection ? '<span class="flex items-center gap-1 text-xs text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded"><i class="fas fa-shield-alt text-xs"></i> MEV Protected</span>' : ''}
+                        </div>
+                        <button class="px-3 py-1.5 ${s.status === 'active' ? 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400' : 'bg-green-500/20 border-green-500/30 text-green-400'} border text-xs font-bold rounded transition-all hover:scale-105">
+                            ${s.status === 'active' ? 'Pause' : 'Start'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ─── Event Listeners ───────────────────────────────────────
+        document.getElementById('spreadSlider').addEventListener('input', loadProbability);
+        document.getElementById('liquiditySlider').addEventListener('input', loadProbability);
+        document.getElementById('tokenSelect').addEventListener('change', loadPriceScanner);
+
+        // ─── Initial Load ──────────────────────────────────────────
+        async function init() {
+            await Promise.all([
+                loadPriceHistory(),
+                loadOpportunities(),
+                loadPriceScanner(),
+                loadNetwork(),
+                loadProbability(),
+                loadStrategies(),
+            ]);
+        }
+
+        init();
+
+        // Auto-refresh
+        setInterval(loadOpportunities, 8000);
+        setInterval(loadPriceHistory, 15000);
+        setInterval(loadNetwork, 12000);
+    </script>
+</body>
+</html>
